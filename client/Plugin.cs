@@ -10,6 +10,7 @@ using Characters;
 using HarmonyLib;
 using Levels;
 using Newtonsoft.Json;
+using PlatformSpecific;
 using UnityEngine;
 using UnityEngine.XR.WSA.Input;
 
@@ -218,6 +219,18 @@ public class Plugin : BaseUnityPlugin
         }
     }
     
+    
+    [HarmonyPatch(typeof(SteamworksManager), "OnApplicationQuit")]
+    class Quit
+    {
+        [HarmonyPrefix]
+        static void setpatch()
+        {
+            lastSent.Action = "delete";
+            ClientHandler.SendToServer(lastSent);
+        }
+    }
+
     
     static void DeletePlayer(Guid id)
     {

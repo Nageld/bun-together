@@ -15,7 +15,6 @@ There is currently no way for players to interact with each other.
 
 ## Roadmap
 - Update server to use python3
-- Handle players disconnecting
 - Configurable server ip from bepinex configs
 - Test mod compatibility
 - Player opacity
