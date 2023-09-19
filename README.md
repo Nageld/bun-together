@@ -21,3 +21,4 @@ There is currently no way for players to interact with each other.
 - Player opacity
 - Player nametags
 - More actions to allow players to pose or tint their character
+- Sync actions
