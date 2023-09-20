@@ -11,7 +11,8 @@ public class Message
     private string burrow;
     private Direction facing;
     private string action;
-    
+    private string extra;
+
     public String Position
     {
         get => position;
@@ -23,13 +24,13 @@ public class Message
         get => userID;
         set => userID = value;
     }
-    
+
     public string Burrow
     {
         get => burrow;
         set => burrow = value;
     }
-    
+
     public Direction Facing
     {
         get => facing;
@@ -42,6 +43,12 @@ public class Message
         set => action = value;
     }
 
+    public string Extra
+    {
+        get => extra;
+        set => extra = value;
+    }
+
 
     public Message(string burrow, Guid userID, string position)
     {
@@ -49,11 +56,11 @@ public class Message
         this.userID = userID;
         this.position = position;
     }
-    
-    
+
+
     public override string ToString()
     {
-        return  $@"{{ ""burrow"": ""{burrow}"",""userID"": ""{userID}"",""position"": ""{position}"",""facing"": ""{facing}"",""action"": ""{action}"" }}";
+        return $@"{{ ""burrow"": ""{burrow}"",""userID"": ""{userID}"",""position"": ""{position}"",""facing"": ""{facing}"",""action"": ""{action}"",""extra"": ""{extra}"" }}";
     }
 
     public bool Equals(Message message)
@@ -64,10 +71,10 @@ public class Message
     public Vector3 PositionVec()
     {
         var s = position.Substring(1, position.Length - 2);
-            string[] parts = s.Split(new string[] { "," }, StringSplitOptions.None);
-            return new Vector3(
-                float.Parse(parts[0]),
-                float.Parse(parts[1]),
-                float.Parse(parts[2]));
-        }
+        string[] parts = s.Split(new string[] { "," }, StringSplitOptions.None);
+        return new Vector3(
+            float.Parse(parts[0]),
+            float.Parse(parts[1]),
+            float.Parse(parts[2]));
+    }
 }

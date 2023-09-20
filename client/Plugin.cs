@@ -11,8 +11,10 @@ using HarmonyLib;
 using Levels;
 using Newtonsoft.Json;
 using PlatformSpecific;
+using TMPro;
 using UnityEngine;
-using UnityEngine.XR.WSA.Input;
+using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 namespace MultiplayerDropIn;
 
@@ -29,9 +31,12 @@ public class Plugin : BaseUnityPlugin
 
     private static PaqueretteController clientPlayer;
     private static Guid g;
-
+    private static GameObject onlineUsers; 
+    
     private static Message lastSent;
     private static Stack changes = new Stack();
+    // private static bool nametags = false;
+    private static bool showPlayerList = false;
 
     private void Awake()
     {
@@ -57,36 +62,6 @@ public class Plugin : BaseUnityPlugin
         harmony.PatchAll();
     }
 
-    static void DrawPlayer(Message message)
-    {
-        GameObject go;
-        if (!Players.ContainsKey(message.UserID))
-        {
-            go = Instantiate(clientPlayer.gameObject);
-            go.GetComponent<PaqueretteController>().enabled = false;
-            Players.Add(message.UserID, go);
-        }
-        else
-        {
-            go = Players[message.UserID];
-        }
-
-        var coordinates = message.PositionVec();
-
-        try
-        {
-            go.transform.position = coordinates;
-            go.GetComponent<PaqueretteController>().enabled = true;
-            go.GetComponent<PaqueretteController>().ForceTurn(message.Facing);
-
-            go.GetComponent<PaqueretteController>().enabled = false;
-
-        }
-        catch (FormatException)
-        {
-            Console.WriteLine(coordinates);
-        }
-    }
 
     [HarmonyPatch(typeof(PaqueretteController), "HandleMovementDone")]
     class PlayerMove
@@ -96,21 +71,32 @@ public class Plugin : BaseUnityPlugin
         {
             if (clientPlayer == null)
             {
+                // On player load
                 Application.runInBackground = true;
                 clientPlayer = GameManager.PaqueretteController;
+                var canvas = GameObject.Find("Canvas");
+                var reference = GameObject.Find("BabyBunniesCounter");
+                var start = reference.GetComponentInChildren<TextMeshProUGUI>();
+                onlineUsers = new GameObject("PlayerList");
+                onlineUsers.transform.parent = canvas.transform;
+                onlineUsers.transform.position = new Vector3(6.5f, -1.2f, 0);
+                onlineUsers.transform.localScale = Vector3.one;
+                var text = onlineUsers.gameObject.AddComponent<TextMeshProUGUI>();
+                text.font = start.font;
+                text.fontSize = 8;
             }
-    
+
             Message message = new Message(LevelIndicatorGenerator.GetShortLevelIndicator(), g,
                 clientPlayer.gameObject.transform.position.ToString());
             lastSent ??= message;
             message.Facing = clientPlayer.FacedDirection;
             message.Action = "move";
 
-            
+
             if (!message.Equals(lastSent))
             {
                 lastSent = message;
-                Console.WriteLine($"Sent: {message}");
+                // Console.WriteLine($"Sent: {message}");
                 ClientHandler.SendToServer(message);
             }
 
@@ -131,56 +117,46 @@ public class Plugin : BaseUnityPlugin
             {
                 Console.WriteLine("Not loaded yet");
             }
+            if (Keyboard.current[Key.Tab].isPressed && !showPlayerList && clientPlayer)
+            {
+                showPlayerList = true;
+                GetPlayers();
+            }
+            if (Keyboard.current[Key.Tab].wasReleasedThisFrame && clientPlayer)
+            {
+                showPlayerList = false;
+                ClearPlayers();
+            }
+            // if (Keyboard.current[Key.LeftCtrl].wasReleasedThisFrame)
+            // {
+            //     ToggleNames();
+            // }
 
             if (changes.Count > 0)
             {
                 Message message = (Message)changes.Pop();
-                Console.WriteLine($"Recieved: {message}");
+                // Console.WriteLine($"Recieved: {message}");
 
                 if (message.Action.Equals("delete"))
                 {
                     DeletePlayer(message.UserID);
                     Players.Remove(message.UserID);
                 }
-                else
+                else if (message.Action.Equals("move") || message.Action.Equals("transition"))
                 {
                     DrawPlayer(message);
 
                 }
-            }
-        }
-
-        static void DrawPlayer(Message message)
-        {
-            GameObject go;
-            if (!Players.ContainsKey(message.UserID))
-            {
-                go = Instantiate(clientPlayer.gameObject);
-                Players.Add(message.UserID, go);
-            }
-            else
-            {
-                go = Players[message.UserID];
-            }
-
-            var coordinates = message.PositionVec();
-
-            try
-            {
-                go.transform.position = coordinates;
-                go.GetComponent<PaqueretteController>().enabled = true;
-                go.GetComponent<PaqueretteController>().ForceTurn(message.Facing);
-                go.GetComponent<PaqueretteController>().enabled = false;
-            }
-            catch (FormatException)
-            {
-                Console.WriteLine(coordinates);
+                else if (message.Action.Equals("users"))
+                {
+                    ListUsers(message);
+                }
             }
         }
 
     }
-    
-    
+
+
     [HarmonyPatch(typeof(UIController), "DisplayLevelIndicator")]
     class ChangeScreen
     {
@@ -212,14 +188,14 @@ public class Plugin : BaseUnityPlugin
             if (!message.Equals(lastSent))
             {
                 lastSent = message;
-                Console.WriteLine($"TRANSITION: {message}");
+                // Console.WriteLine($"TRANSITION: {message}");
                 ClientHandler.SendToServer(message);
             }
 
         }
     }
-    
-    
+
+
     [HarmonyPatch(typeof(SteamworksManager), "OnApplicationQuit")]
     class Quit
     {
@@ -231,7 +207,7 @@ public class Plugin : BaseUnityPlugin
         }
     }
 
-    
+
     static void DeletePlayer(Guid id)
     {
         if (!Players.ContainsKey(id))
@@ -242,5 +218,64 @@ public class Plugin : BaseUnityPlugin
         GameObject go = Players[id];
         Destroy(go);
     }
+    static void DrawPlayer(Message message)
+    {
+        GameObject go;
+        if (!Players.ContainsKey(message.UserID))
+        {
+            go = Instantiate(clientPlayer.gameObject);
+            // var text = go.AddComponent<TextMeshProUGUI>();
+            // text.text = message.UserID.ToString();
+            // text.enabled = nametags;
+            Players.Add(message.UserID, go);
+        }
+        else
+        {
+            go = Players[message.UserID];
+        }
+
+        var coordinates = message.PositionVec();
+
+        try
+        {
+            go.transform.position = coordinates;
+            go.GetComponent<PaqueretteController>().enabled = true;
+            go.GetComponent<PaqueretteController>().ForceTurn(message.Facing);
+            go.GetComponent<PaqueretteController>().enabled = false;
+
+        }
+        catch (FormatException)
+        {
+            Console.WriteLine(coordinates);
+        }
+    }
+
+    static void GetPlayers()
+    {
+        Message message = new Message(LevelIndicatorGenerator.GetShortLevelIndicator(), g,
+    clientPlayer.gameObject.transform.position.ToString());
+        message.Action = "users";
+        ClientHandler.SendToServer(message);
+    }
     
+    static void ListUsers(Message message)
+    {
+        var text = onlineUsers.gameObject.GetComponent<TextMeshProUGUI>();
+        text.text =  message.Extra.Replace("@", Environment.NewLine);
+    }
+
+    static void ClearPlayers()
+    {
+        var text = onlineUsers.gameObject.GetComponent<TextMeshProUGUI>();
+        text.text = "";
+    }
+    // static void ToggleNames()
+    // {
+    //     nametags = !nametags;
+    //     foreach (var id in Players)
+    //     {
+    //         Players[id.Key].GetComponent<TextMeshProUGUI>().enabled = nametags;
+    //     }
+    // }
+
 }

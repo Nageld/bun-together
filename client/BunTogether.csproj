@@ -4,7 +4,7 @@
     <TargetFramework>netstandard21</TargetFramework>
     <AssemblyName>BunTogether</AssemblyName>
     <Description>An async coop mod for Paquerette Down the Bunburrows</Description>
-    <Version>0.0.1</Version>
+    <Version>0.0.2</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <RestoreAdditionalProjectSources>
@@ -37,11 +37,20 @@
     <Reference Include="BepInEx">
       <HintPath>libs\BepInEx.dll</HintPath>
     </Reference>
+    <Reference Include="Unity.InputSystem">
+      <HintPath>libs\Unity.InputSystem.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>libs\Unity.TextMeshPro.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine">
       <HintPath>libs\UnityEngine.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>libs\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>libs\UnityEngine.UI.dll</HintPath>
     </Reference>
   </ItemGroup>
 

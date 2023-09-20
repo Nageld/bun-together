@@ -67,7 +67,7 @@ public class ClientHandler : BaseUnityPlugin
             {
                 
                 var result = JsonConvert.DeserializeObject<Message>(returnData);
-                Console.WriteLine($"Received: {result}");
+                // Console.WriteLine($"Received: {result}");
                 changes.Push(result);
             }
             catch (Exception e)
