@@ -4,7 +4,7 @@
     <TargetFramework>netstandard21</TargetFramework>
     <AssemblyName>BunTogether</AssemblyName>
     <Description>An async coop mod for Paquerette Down the Bunburrows</Description>
-    <Version>0.0.2</Version>
+    <Version>0.0.3</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <RestoreAdditionalProjectSources>

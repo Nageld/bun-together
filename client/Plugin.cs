@@ -75,7 +75,7 @@ public class Plugin : BaseUnityPlugin
                 Application.runInBackground = true;
                 clientPlayer = GameManager.PaqueretteController;
                 var canvas = GameObject.Find("Canvas");
-                var reference = GameObject.Find("BabyBunniesCounter");
+                var reference = GameObject.Find("BunniesCounter");
                 var start = reference.GetComponentInChildren<TextMeshProUGUI>();
                 onlineUsers = new GameObject("PlayerList");
                 onlineUsers.transform.parent = canvas.transform;
