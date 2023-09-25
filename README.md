@@ -14,13 +14,13 @@ There is currently no way for players to interact with each other.
  - Explain room system
 
 ## Roadmap
-- Update server to use python3 [X]
-- Configurable server ip from bepinex configs
-- Test mod compatibility
-- Player opacity
-- Player nametags
-- More actions to allow players to pose or tint their character
-- Sync actions
+- [x] Update server to use python3 
+- [ ] Configurable server ip from bepinex configs
+- [ ] Test mod compatibility
+- [ ] Player opacity
+- [ ] Player nametags
+- [ ] More actions to allow players to pose or tint their character
+- [ ] Sync actions
 
 
 ## Changelog
