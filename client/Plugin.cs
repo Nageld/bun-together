@@ -10,11 +10,13 @@ using Characters;
 using HarmonyLib;
 using Levels;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Bson;
 using PlatformSpecific;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using UnityEngine.UIElements;
 
 namespace MultiplayerDropIn;
 
@@ -62,16 +64,17 @@ public class Plugin : BaseUnityPlugin
         harmony.PatchAll();
     }
 
-
-    [HarmonyPatch(typeof(PaqueretteController), "HandleMovementDone")]
+    
+    // On player load
+    [HarmonyPatch(typeof(PaqueretteController), "Start")]
     class PlayerMove
     {
         [HarmonyPostfix]
         static void setpatch()
         {
+            Console.WriteLine("AYAYAYA");
             if (clientPlayer == null)
             {
-                // On player load
                 Application.runInBackground = true;
                 clientPlayer = GameManager.PaqueretteController;
                 var canvas = GameObject.Find("Canvas");
@@ -84,22 +87,9 @@ public class Plugin : BaseUnityPlugin
                 var text = onlineUsers.gameObject.AddComponent<TextMeshProUGUI>();
                 text.font = start.font;
                 text.fontSize = 8;
+                GameManager.OnDoneLoadingLevel += SideExit;
+                GameManager.PaqueretteController.OnSuccessfulMove += Move;
             }
-
-            Message message = new Message(LevelIndicatorGenerator.GetShortLevelIndicator(), g,
-                clientPlayer.gameObject.transform.position.ToString());
-            lastSent ??= message;
-            message.Facing = clientPlayer.FacedDirection;
-            message.Action = "move";
-
-
-            if (!message.Equals(lastSent))
-            {
-                lastSent = message;
-                // Console.WriteLine($"Sent: {message}");
-                ClientHandler.SendToServer(message);
-            }
-
         }
     }
 
@@ -109,14 +99,6 @@ public class Plugin : BaseUnityPlugin
         [HarmonyPostfix]
         static void setpatch()
         {
-            try
-            {
-                string level = LevelIndicatorGenerator.GetShortLevelIndicator();
-            }
-            catch
-            {
-                Console.WriteLine("Not loaded yet");
-            }
             if (Keyboard.current[Key.Tab].isPressed && !showPlayerList && clientPlayer)
             {
                 showPlayerList = true;
@@ -127,10 +109,6 @@ public class Plugin : BaseUnityPlugin
                 showPlayerList = false;
                 ClearPlayers();
             }
-            // if (Keyboard.current[Key.LeftCtrl].wasReleasedThisFrame)
-            // {
-            //     ToggleNames();
-            // }
 
             if (changes.Count > 0)
             {
@@ -155,46 +133,6 @@ public class Plugin : BaseUnityPlugin
         }
 
     }
-
-
-    [HarmonyPatch(typeof(UIController), "DisplayLevelIndicator")]
-    class ChangeScreen
-    {
-        [HarmonyPostfix]
-        static void setpatch()
-        {
-
-            if (clientPlayer == null)
-            {
-                return;
-            }
-
-            lastSent.Action = "delete";
-            ClientHandler.SendToServer(lastSent);
-            foreach (var id in Players)
-            {
-                DeletePlayer(id.Key);
-            }
-
-            Players = new Dictionary<Guid, GameObject>();
-
-
-            Message message = new Message(LevelIndicatorGenerator.GetShortLevelIndicator(), g,
-                clientPlayer.gameObject.transform.position.ToString());
-            lastSent ??= message;
-            message.Facing = clientPlayer.FacedDirection;
-            message.Action = "transition";
-
-            if (!message.Equals(lastSent))
-            {
-                lastSent = message;
-                // Console.WriteLine($"TRANSITION: {message}");
-                ClientHandler.SendToServer(message);
-            }
-
-        }
-    }
-
 
     [HarmonyPatch(typeof(SteamworksManager), "OnApplicationQuit")]
     class Quit
@@ -278,4 +216,52 @@ public class Plugin : BaseUnityPlugin
     //     }
     // }
 
+    
+    
+    static void SideExit()
+    {
+        lastSent.Action = "delete";
+        ClientHandler.SendToServer(lastSent);
+        foreach (var id in Players)
+        {
+            DeletePlayer(id.Key);
+        }
+        Players = new Dictionary<Guid, GameObject>();
+        
+        Message message = BuildMessage();
+        lastSent ??= message;
+        message.Facing = clientPlayer.FacedDirection;
+        message.Action = "transition";
+
+        if (!message.Equals(lastSent))
+        {
+            lastSent = message;
+            ClientHandler.SendToServer(message);
+        }
+
+    }
+
+    static void Move()
+    {
+        Message message = BuildMessage();
+        lastSent ??= message;
+        message.Facing = clientPlayer.FacedDirection;
+        message.Action = "move";
+
+
+        if (!message.Equals(lastSent))
+        {
+            lastSent = message;
+            ClientHandler.SendToServer(message);
+        }
+
+    }
+
+    static Message BuildMessage()
+    {
+       return new Message(LevelIndicatorGenerator.GetShortLevelIndicator(), g,
+            clientPlayer.gameObject.transform.position.ToString());
+    }
+    
+    
 }

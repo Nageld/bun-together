@@ -41,8 +41,8 @@ public class ClientHandler : BaseUnityPlugin
         {
             Stack changed = changes;
             udpClient.Connect(ip, port);
-            IPEndPoint RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
-            Thread thread = new Thread(() => AwaitMessages(ref udpClient, RemoteIpEndPoint, ref changed ));
+            IPEndPoint remoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
+            Thread thread = new Thread(() => AwaitMessages(ref udpClient, remoteIpEndPoint, ref changed ));
             thread.Start();
         }
         catch (Exception e)
@@ -53,14 +53,14 @@ public class ClientHandler : BaseUnityPlugin
     }
 
 
-    private static void AwaitMessages(ref UdpClient udpClient, IPEndPoint RemoteIpEndPoint, ref Stack changes)
+    private static void AwaitMessages(ref UdpClient udpClient, IPEndPoint remoteIpEndPoint, ref Stack changes)
     {
         Console.WriteLine($"AWAITING");
 
         while (true)
         {
 
-            Byte[] receiveBytes = udpClient.Receive(ref RemoteIpEndPoint);
+            Byte[] receiveBytes = udpClient.Receive(ref remoteIpEndPoint);
 
             string returnData = Encoding.ASCII.GetString(receiveBytes);
             try
