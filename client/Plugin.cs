@@ -37,6 +37,7 @@ public class Plugin : BaseUnityPlugin
     private static Stack changes = new Stack();
     // private static bool nametags = false;
     private static bool showPlayerList = false;
+    private static bool latched_player_list_button = false;
 
     private void Awake()
     {
@@ -106,6 +107,9 @@ public class Plugin : BaseUnityPlugin
     [HarmonyPatch(typeof(PaqueretteController), "Update")]
     class Update
     {
+        /// <summary>
+        /// 
+        /// </summary>
         [HarmonyPostfix]
         static void setpatch()
         {
@@ -117,7 +121,29 @@ public class Plugin : BaseUnityPlugin
             {
                 Console.WriteLine("Not loaded yet");
             }
-            if (Keyboard.current[Key.Tab].isPressed && !showPlayerList && clientPlayer)
+            if (!clientPlayer) {
+                return;
+            }
+
+            if (Keyboard.current[Key.Tab].isPressed)
+            {
+                if (!latched_player_list_button) { 
+                    latched_player_list_button = true;
+                    if (showPlayerList)
+                    {
+                        ClearPlayers();
+                    }
+                    else {
+                        GetPlayers();
+                    }
+                    showPlayerList = !showPlayerList;
+                }
+            }
+            else {
+                latched_player_list_button = false;
+            }
+
+            /*if (Keyboard.current[Key.Tab].isPressed && !showPlayerList && clientPlayer)
             {
                 showPlayerList = true;
                 GetPlayers();
@@ -126,7 +152,9 @@ public class Plugin : BaseUnityPlugin
             {
                 showPlayerList = false;
                 ClearPlayers();
-            }
+            }*/
+            
+
             // if (Keyboard.current[Key.LeftCtrl].wasReleasedThisFrame)
             // {
             //     ToggleNames();
