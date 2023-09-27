@@ -33,8 +33,8 @@ public class Plugin : BaseUnityPlugin
 
     private static PaqueretteController clientPlayer;
     private static Guid g;
-    private static GameObject onlineUsers; 
-    
+    private static GameObject onlineUsers;
+
     private static Message lastSent;
     private static Stack changes = new Stack();
     // private static bool nametags = false;
@@ -44,38 +44,25 @@ public class Plugin : BaseUnityPlugin
     {
         Logger.LogInfo($"Plugin {MyPluginInfo.PLUGIN_GUID} is loaded!");
         g = Guid.NewGuid();
-
-        // TODO: These calls need to be split off to whatever respective patch is necessary to do a server creation or client creation
-        // if (Host_Machine.Value)
-        // {
-        //     Thread thread = new Thread(new ThreadStart(ServerStart));
-        //     thread.Start();
-        // }
-        // else
-        // {
-        //     Thread thread = new Thread(new ThreadStart(ClientStart));
-        //     
-        // }
-
-        // TODO: Currently assumed to be server on game start for debugging reasons
         Thread thread = new Thread(() => ClientHandler.ClientStart("141.148.63.115", 25565, ref changes));
         thread.Start();
 
         harmony.PatchAll();
     }
 
-    
-    // On player load
+    // On player load, safe point to setup
+    // Better setup point likely exists but finding is low priority
     [HarmonyPatch(typeof(PaqueretteController), "Start")]
     class PlayerMove
     {
         [HarmonyPostfix]
         static void setpatch()
         {
-            Console.WriteLine("AYAYAYA");
             if (clientPlayer == null)
             {
+                // Likely not needed but worst case wastes 1op?
                 Application.runInBackground = true;
+
                 clientPlayer = GameManager.PaqueretteController;
                 var canvas = GameObject.Find("Canvas");
                 var reference = GameObject.Find("BunniesCounter");
@@ -87,6 +74,7 @@ public class Plugin : BaseUnityPlugin
                 var text = onlineUsers.gameObject.AddComponent<TextMeshProUGUI>();
                 text.font = start.font;
                 text.fontSize = 8;
+
                 GameManager.OnDoneLoadingLevel += SideExit;
                 GameManager.PaqueretteController.OnSuccessfulMove += Move;
             }
@@ -115,19 +103,24 @@ public class Plugin : BaseUnityPlugin
                 Message message = (Message)changes.Pop();
                 // Console.WriteLine($"Recieved: {message}");
 
-                if (message.Action.Equals("delete"))
+                switch (message.Action)
                 {
-                    DeletePlayer(message.UserID);
-                    Players.Remove(message.UserID);
-                }
-                else if (message.Action.Equals("move") || message.Action.Equals("transition"))
-                {
-                    DrawPlayer(message);
-
-                }
-                else if (message.Action.Equals("users"))
-                {
-                    ListUsers(message);
+                    case "delete":
+                        DeletePlayer(message.UserID);
+                        Players.Remove(message.UserID);
+                        break;
+                    case "move":
+                        DrawPlayer(message);
+                        break;
+                    case "transition":
+                        DrawPlayer(message);
+                        break;
+                    case "users":
+                        ListUsers(message);
+                        break;
+                    default:
+                        Console.WriteLine("Invalid Message");
+                        break;
                 }
             }
         }
@@ -165,6 +158,7 @@ public class Plugin : BaseUnityPlugin
             // var text = go.AddComponent<TextMeshProUGUI>();
             // text.text = message.UserID.ToString();
             // text.enabled = nametags;
+            // text.transform.parent = go.transform;
             Players.Add(message.UserID, go);
         }
         else
@@ -190,16 +184,15 @@ public class Plugin : BaseUnityPlugin
 
     static void GetPlayers()
     {
-        Message message = new Message(LevelIndicatorGenerator.GetShortLevelIndicator(), g,
-    clientPlayer.gameObject.transform.position.ToString());
+        Message message = BuildMessage();
         message.Action = "users";
         ClientHandler.SendToServer(message);
     }
-    
+
     static void ListUsers(Message message)
     {
         var text = onlineUsers.gameObject.GetComponent<TextMeshProUGUI>();
-        text.text =  message.Extra.Replace("@", Environment.NewLine);
+        text.text = message.Extra.Replace("@", Environment.NewLine);
     }
 
     static void ClearPlayers()
@@ -207,17 +200,7 @@ public class Plugin : BaseUnityPlugin
         var text = onlineUsers.gameObject.GetComponent<TextMeshProUGUI>();
         text.text = "";
     }
-    // static void ToggleNames()
-    // {
-    //     nametags = !nametags;
-    //     foreach (var id in Players)
-    //     {
-    //         Players[id.Key].GetComponent<TextMeshProUGUI>().enabled = nametags;
-    //     }
-    // }
 
-    
-    
     static void SideExit()
     {
         lastSent.Action = "delete";
@@ -227,7 +210,7 @@ public class Plugin : BaseUnityPlugin
             DeletePlayer(id.Key);
         }
         Players = new Dictionary<Guid, GameObject>();
-        
+
         Message message = BuildMessage();
         lastSent ??= message;
         message.Facing = clientPlayer.FacedDirection;
@@ -259,9 +242,23 @@ public class Plugin : BaseUnityPlugin
 
     static Message BuildMessage()
     {
-       return new Message(LevelIndicatorGenerator.GetShortLevelIndicator(), g,
-            clientPlayer.gameObject.transform.position.ToString());
+        var message = new Message(LevelIndicatorGenerator.GetShortLevelIndicator(), g,
+             clientPlayer.gameObject.transform.position.ToString());
+        if (message.Burrow.Equals("Surface")){
+            message.Burrow = LevelIndicatorGenerator.GetLongLevelIndicator(false);
+        }
+        return message;
     }
-    
-    
+
+
+    // static void ToggleNames()
+    // {
+    //     nametags = !nametags;
+    //     foreach (var id in Players)
+    //     {
+    //         Players[id.Key].GetComponent<TextMeshProUGUI>().enabled = nametags;
+    //     }
+    // }
+
+
 }

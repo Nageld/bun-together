@@ -12,30 +12,14 @@ using UnityEngine.XR;
 
 namespace MultiplayerDropIn;
 
-public struct ConnectionInfo
-{
-    public Boolean IsHost;
-    public String Address;
-    public int Port;
-}
-
-[BepInPlugin($"{MyPluginInfo.PLUGIN_GUID}.ClientHandler", $"{MyPluginInfo.PLUGIN_GUID}.ClientHandler", MyPluginInfo.PLUGIN_VERSION)]
 public class ClientHandler : BaseUnityPlugin
 {
-    public static ConnectionInfo ServerInfo;
-    private readonly Harmony harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
     public static UdpClient udpClient;
-    
-    private void Awake()
-    {
-        Logger.LogInfo($"ClientHandler plugin is loaded");
-        harmony.PatchAll();
-    }
 
     public static void ClientStart(String ip, int port, ref Stack changes)
     {
         Console.WriteLine($"Connecting to {ip} on port {port}");
-        
+
         udpClient = new UdpClient();
         try
         {
@@ -65,7 +49,7 @@ public class ClientHandler : BaseUnityPlugin
             string returnData = Encoding.ASCII.GetString(receiveBytes);
             try
             {
-                
+
                 var result = JsonConvert.DeserializeObject<Message>(returnData);
                 // Console.WriteLine($"Received: {result}");
                 changes.Push(result);
@@ -76,10 +60,10 @@ public class ClientHandler : BaseUnityPlugin
             }
         }
     }
-    
+
     public static void SendToServer(Message message)
     {
-        
+
         udpClient.Send(Encoding.ASCII.GetBytes(message.ToString()), Encoding.ASCII.GetBytes(message.ToString()).Length);
     }
 
